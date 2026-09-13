@@ -1,0 +1,6 @@
+split,images,annotations,images_without_annotations,quadrant_labels,enumeration_labels,diagnosis_labels,distinct_resolutions,unreadable_images,missing_image_files,malformed_boxes
+quadrant_train,693,2772,0,2772,0,0,245,0,0,0
+quadrant_enumeration_train,634,18095,0,18095,18095,0,235,0,0,0
+diagnosis_train,705,3529,27,3529,3529,3529,251,0,0,0
+diagnosis_val,50,182,4,182,182,182,36,0,0,0
+diagnosis_test,250,1043,11,1043,1043,1043,138,0,0,0

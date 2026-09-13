@@ -234,6 +234,25 @@ Asset classes an active run mode deliberately skipped are recorded with
 cells read `not run`. **No number anywhere in `paper_assets/` is interpolated,
 extrapolated, or carried over from another run mode.**
 
+`status="not run"` also covers an asset that *was* produced in an earlier
+session but whose output file did not carry into this one (see the
+`_not_run_*.txt` markers under `paper_assets/tables/` and `figures/` and
+their `note` field in the manifest) — this is indistinguishable from "never
+run" to a reader unless the note is checked. Before treating any conclusion
+in the paper as settled, confirm the asset it cites is actually present, not
+just cited.
+
+`table:dataset_audit` in particular carries the per-tier class histograms
+that back the Deep Caries test-split finding, and previously depended on
+notebook 01 running in the *same* session as notebook 03 — it was only ever
+built from the in-memory `audits` dict, so a standalone notebook 03 rebuild
+silently dropped it even though notebook 01's `summary_01_setup_and_data.json`
+(under `results_raw/<mode>/`) already retained everything needed to
+reconstruct it. Notebook 03 now falls back to that retained summary the same
+way the Runs table falls back to retained run records, so the table survives
+a standalone rebuild — it only reads as `not run` now if notebook 01 has
+never been run at all for this run mode.
+
 ## 7. Re-verifying without retraining
 
 A reviewer with the two published Kaggle Datasets attached runs one notebook:

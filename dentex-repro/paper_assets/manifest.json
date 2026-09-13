@@ -28,19 +28,6 @@
       "bytes": null
     },
     {
-      "path": "paper_assets/tables/_not_run_table_dataset_audit.txt",
-      "asset_class": "table:dataset_audit",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "not run",
-      "config_hash": null,
-      "inputs": [],
-      "note": "the manifest cited this asset but the file is not in this repository (paper_assets/tables/dataset_audit.csv, paper_assets/tables/dataset_audit.tex). It was produced by a session whose output was not carried across.",
-      "timestamp": "2026-08-16T14:50:02-0700",
-      "sha256": null,
-      "bytes": null
-    },
-    {
       "path": "paper_assets/tables/main_results.csv",
       "asset_class": "table:main_results",
       "notebook": "03_evaluate_and_build_assets",
@@ -494,6 +481,149 @@
       "timestamp": "2026-08-20T10:02:55-0700",
       "sha256": "65901ea1158d88e8b741de4259e8397d5860c9e9b0fced9a765b69ef7c7fb2bc",
       "bytes": 3411
+    },
+    {
+      "path": "paper_assets/tables/dataset_audit.csv",
+      "asset_class": "table:dataset_audit",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T15:43:01-0700",
+      "sha256": "6d60d07b594a96c0ef0208aa6671b91590bcd36e8ed430b50a0c454c435ff690",
+      "bytes": 442
+    },
+    {
+      "path": "paper_assets/tables/dataset_audit.tex",
+      "asset_class": "table:dataset_audit",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T15:43:01-0700",
+      "sha256": "784d88eda70d2e2f8d76be2b99179f94063ab0d3e4f521314eb81fc9c1b547bd",
+      "bytes": 991
+    },
+    {
+      "path": "paper_assets/tables/diagnosis_label_histogram.csv",
+      "asset_class": "table:diagnosis_label_histogram",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T15:45:09-0700",
+      "sha256": "e5f90270283f3924ee28606df08c985acef10e529cc38f0be530c728d188f675",
+      "bytes": 143
+    },
+    {
+      "path": "paper_assets/tables/diagnosis_label_histogram.tex",
+      "asset_class": "table:diagnosis_label_histogram",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T15:45:09-0700",
+      "sha256": "8467237429fb4b8667a9ffa3ecc24be11ac36abcc9eb22d758ec4126fde8bde2",
+      "bytes": 685
+    },
+    {
+      "path": "paper_assets/tables/manipulation_margin.csv",
+      "asset_class": "table:manipulation_margin",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T16:03:05-0700",
+      "sha256": "098f99a4967fd807d335b7d858cc82b0ab526447b854a3d0ee65244011218462",
+      "bytes": 262
+    },
+    {
+      "path": "paper_assets/tables/manipulation_margin.tex",
+      "asset_class": "table:manipulation_margin",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T16:03:05-0700",
+      "sha256": "8711fa62a7deef462e1bea0d7eb1e77da2efb71311316365f9cefed4dc156d28",
+      "bytes": 893
+    },
+    {
+      "path": "paper_assets/tables/degradation_seed_consistency.csv",
+      "asset_class": "table:degradation_seed_consistency",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T16:04:31-0700",
+      "sha256": "1fa3a4c784cb6a7e8ab29f5530cd5ecfdade5795699970a299a7b1cfe1b23b29",
+      "bytes": 323
+    },
+    {
+      "path": "paper_assets/tables/degradation_seed_consistency.tex",
+      "asset_class": "table:degradation_seed_consistency",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T16:04:31-0700",
+      "sha256": "f395b670a044fdab159f5c8e8b0407131de8be9f159472d927fdd73412aef9dd",
+      "bytes": 955
+    },
+    {
+      "path": "paper_assets/tables/label_scheme.csv",
+      "asset_class": "table:label_scheme",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T16:22:26-0700",
+      "sha256": "599a9dec8ab73bb06e7cb8d5b44298d752fac2deb8b077a88dda0e74a8ef67d5",
+      "bytes": 384
+    },
+    {
+      "path": "paper_assets/tables/label_scheme.tex",
+      "asset_class": "table:label_scheme",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T16:22:26-0700",
+      "sha256": "affe48108f99a9ba030b6a2fca1d0b0ac6431d4b8fe3928b7203d164fb05b936",
+      "bytes": 991
+    },
+    {
+      "path": "paper_assets/tables/_not_run_table_image_overlap.txt",
+      "asset_class": "table:image_overlap",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "not run",
+      "config_hash": null,
+      "inputs": [],
+      "note": "no local DENTEX image files available in this environment to hash; code is wired in and will produce this table for real the next time notebook 01 runs on Kaggle",
+      "timestamp": "2026-09-13T16:29:28-0700",
+      "sha256": null,
+      "bytes": null
     }
   ],
   "environment": {
@@ -1465,5 +1595,5 @@
       "zstandard==0.25.0"
     ]
   },
-  "updated_at": "2026-08-20T10:02:55-0700"
+  "updated_at": "2026-09-13T16:29:28-0700"
 }

@@ -494,6 +494,21 @@ def dump_predictions(weights: str, config_file: str, split: str, tier: int,
 
     times = [row["seconds"] for row in per_image]
     warm = times[5:] if len(times) > 10 else times      # drop CUDA autotuning cost
+    # Free: every score is already sitting in `results` from the forward passes
+    # above, so this costs no extra inference. Exists so "no detection clears
+    # 0.50 confidence" is a number read off this file, not an impression from
+    # a table of AP zeros.
+    scores = sorted(r.get("score", 1.0) for r in results)
+    score_stats = {
+        "n": len(scores),
+        "mean": round(sum(scores) / len(scores), 4) if scores else None,
+        "median": round(scores[len(scores) // 2], 4) if scores else None,
+        "max": round(scores[-1], 4) if scores else None,
+        "frac_above_0.5": (round(sum(1 for s in scores if s >= 0.5) / len(scores), 4)
+                           if scores else None),
+        "frac_above_0.3": (round(sum(1 for s in scores if s >= 0.3) / len(scores), 4)
+                           if scores else None),
+    }
     summary = {
         "weights": os.path.abspath(weights),
         "predictions": os.path.abspath(output_json),
@@ -512,6 +527,7 @@ def dump_predictions(weights: str, config_file: str, split: str, tier: int,
         "failure_counts": dict(failure_counts),
         "images_with_no_detections": sum(1 for r in per_image if r["num_detections"] == 0),
         "class_names": registration.thing_classes(dataset_name, tier),
+        "score_stats": score_stats,
     }
     if cfg.MODEL.DEVICE == "cuda":
         summary["peak_gpu_memory_mb"] = round(

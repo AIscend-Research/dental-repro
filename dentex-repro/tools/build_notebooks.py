@@ -45,7 +45,7 @@ NUM_GPUS = None             # None = use every visible GPU; set 1 to force singl
 PUBLISH_KAGGLE_DATASET = True
 CKPT_DATASET_SLUG = "dentex-repro-ckpts"
 DATA_DATASET_SLUG = "dentex-repro-data"
-REPO_URL = "https://github.com/AIscend-Research/dental-repro.git"
+REPO_URL = "https://github.com/christopherh-88/HierarchicalDet.git"
 
 import os, subprocess, sys
 
@@ -328,11 +328,76 @@ tables.write_table(
     "DENTEX composition and integrity, as received and converted by this study.",
     "01_setup_and_data", run.mode, "table:dataset_audit", inputs=[paths["coco"]])
 
+# Static -- no dataset or GPU needed, derived from the converter's own word
+# tables -- so it is produced unconditionally, every run mode, every session.
+tables.write_table(
+    "label_scheme", tables.label_scheme_rows(),
+    ["code", "turkish_word", "gloss", "task_class", "note"],
+    "The DENTEX test split's 9-code Turkish clinical labelling scheme. "
+    "task_class marks the 3 codes (1/6/7) the diagnosis task actually uses; "
+    "Deep Caries has no code in this scheme at all.",
+    "01_setup_and_data", run.mode, "table:label_scheme")
+
+# Raw per-class diagnosis counts, independent of any training run -- this is
+# the table a reader checks to verify the Deep Caries finding themselves
+# instead of taking the deviation log's word for it.
+_histogram_rows = tables.diagnosis_label_histogram_rows(audits)
+_histogram_columns = ["split"] + sorted({
+    key for row in _histogram_rows for key in row if key != "split"
+})
+tables.write_table(
+    "diagnosis_label_histogram", _histogram_rows, _histogram_columns,
+    "Diagnosis-tier class counts per split, straight from the converted "
+    "annotations. A class missing from a split's columns had zero occurrences "
+    "in that split.",
+    "01_setup_and_data", run.mode, "table:diagnosis_label_histogram",
+    inputs=[paths["coco"]])
+
 hashes = data_convert.dataset_hashes()
 with open(os.path.join(paths["root"], "dataset_hashes.json"), "w") as handle:
     json.dump(hashes, handle, indent=2)
 for name, digest in hashes.items():
     print("{:34s} {}".format(name, digest[:16]))
+'''),
+        ("code", '''\
+# ---- Cross-tier / cross-split image duplication (CPU-only, no GPU) ----
+# Tiers 0/1 (quadrant, quadrant-enumeration) are pooled entirely into
+# training with no held-out split of their own (DENTEX paper). If the
+# diagnosis-tier test/val images overlap those training tiers by content,
+# the hierarchical pipeline may have already seen those pixels, under a
+# different annotation tier, before "testing" on them -- a property of the
+# original design and public release, not of this conversion.
+overlap = data_convert.image_hash_overlap()
+print(json.dumps(overlap, indent=2))
+if overlap["total_image_files"]:
+    test_pct = 100 * overlap["test_overlap_with_training"] / max(
+        1, overlap["per_split_unique_files"]["diagnosis_test"])
+    val_pct = 100 * overlap["val_overlap_with_training"] / max(
+        1, overlap["per_split_unique_files"]["diagnosis_val"])
+    if overlap["test_overlap_with_training"] or overlap["val_overlap_with_training"]:
+        setup_env.log_deviation(
+            "cross-tier image duplication: {:.0f}% of test images and {:.0f}% of "
+            "val images are byte-identical to a training-tier image".format(
+                test_pct, val_pct),
+            "tiers 0/1 are pooled entirely into training with no held-out split of "
+            "their own (DENTEX paper); this is a property of the original design "
+            "and the public release, inherited by any faithful reproduction",
+            "01_setup_and_data",
+            impact="the diagnosis-tier test/val split may not be held out from "
+                   "everything the hierarchical pipeline has seen, at some tier, "
+                   "during training")
+
+tables.write_table(
+    "image_overlap",
+    [{"metric": key, "value": value} for key, value in overlap.items()
+     if key != "per_split_unique_files"]
+    + [{"metric": "unique_files__{}".format(name), "value": count}
+       for name, count in overlap["per_split_unique_files"].items()],
+    ["metric", "value"],
+    "Cross-tier / cross-split image duplication by exact content hash (MD5). "
+    "*_overlap_with_training counts diagnosis-tier test/val images that are "
+    "byte-identical to an image somewhere in the pooled training tiers.",
+    "01_setup_and_data", run.mode, "table:image_overlap")
 '''),
         ("code", summary_cell("01_setup_and_data", '''\
 summary = {
@@ -343,6 +408,7 @@ summary = {
     "download": {k: v for k, v in download.items() if k != "raw_train_json"},
     "paths": paths,
     "audits": audits,
+    "image_overlap": overlap,
     "published_counts": actual_counts,
     "test_parse_report": {k: v for k, v in report.items() if k != "raw_label_counts"},
     "registration": registration_report,
@@ -1285,10 +1351,95 @@ if main_results:
         "Per-class AP. OUR EXTENSION: the original paper reports tier-level "
         "aggregates only, so there is no reference column.",
         NB, run.mode, "table:main_results")
+    # Does the diagnosis-tier manipulation-ablation margin actually come from
+    # every class moving together, or from one class carrying it while another
+    # moves the opposite way? Exact, not eyeballed off per_class_ap or a chart.
+    if "Ours_full" in main_results and "Ours_wo_Manipulation" in main_results:
+        margin_rows = tables.manipulation_margin_rows(main_results)
+        written["manipulation_margin"] = tables.write_table(
+            "manipulation_margin", margin_rows,
+            ["class", "Ours_full_AP", "Ours_wo_Manipulation_AP", "delta",
+             "share_of_tier_margin_pct", "direction"],
+            "Per-class decomposition of the diagnosis-tier noisy-box-manipulation "
+            "margin (Ours_full minus Ours_wo_Manipulation). A negative delta means "
+            "that class scores HIGHER under the ablation -- the tier-level margin "
+            "does not hold class-by-class.",
+            NB, run.mode, "table:manipulation_margin")
+    else:
+        tables.record_not_run(
+            "table:manipulation_margin", NB, run.mode,
+            "Ours_full and/or Ours_wo_Manipulation not both present in this run mode")
 else:
     for asset_class in ("table:main_results", "table:original_vs_reproduced",
-                        "table:seed_variance"):
+                        "table:seed_variance", "table:manipulation_margin"):
         tables.record_not_run(asset_class, NB, run.mode, "no evaluation results found")
+
+# ---- table:dataset_audit — rebuild from notebook 01's retained summary ----
+# Notebook 01 is a separate kernel from this one and only ever builds this
+# table itself, in-session, from its own `audits` dict. If that dict never
+# reaches this session (notebook 01 wasn't rerun alongside this one, or its
+# `paper_assets/tables/dataset_audit.*` output didn't carry over), the table
+# silently disappears even though the data behind it -- the per-tier class
+# histograms that back the Deep Caries test-split finding -- is sitting right
+# there in `results_raw/<mode>/summary_01_setup_and_data.json`. Rebuild from
+# that retained summary the same way the Runs table falls back to retained
+# run records, instead of only ever trusting the in-session `audits` dict.
+# Static and data-free, so it is always producible regardless of session.
+written["label_scheme"] = tables.write_table(
+    "label_scheme", tables.label_scheme_rows(),
+    ["code", "turkish_word", "gloss", "task_class", "note"],
+    "The DENTEX test split's 9-code Turkish clinical labelling scheme. "
+    "task_class marks the 3 codes (1/6/7) the diagnosis task actually uses; "
+    "Deep Caries has no code in this scheme at all.",
+    NB, run.mode, "table:label_scheme")
+
+data_summary_01 = setup_env.read_notebook_summary("01_setup_and_data") or {}
+audits_from_summary = data_summary_01.get("audits")
+if audits_from_summary:
+    written["dataset_audit"] = tables.write_table(
+        "dataset_audit", tables.audit_rows(audits_from_summary),
+        ["split", "images", "annotations", "images_without_annotations",
+         "quadrant_labels", "enumeration_labels", "diagnosis_labels",
+         "distinct_resolutions", "unreadable_images", "missing_image_files",
+         "malformed_boxes"],
+        "DENTEX composition and integrity, as received and converted by this study.",
+        NB, run.mode, "table:dataset_audit")
+    _histogram_rows = tables.diagnosis_label_histogram_rows(audits_from_summary)
+    _histogram_columns = ["split"] + sorted({
+        key for row in _histogram_rows for key in row if key != "split"
+    })
+    written["diagnosis_label_histogram"] = tables.write_table(
+        "diagnosis_label_histogram", _histogram_rows, _histogram_columns,
+        "Diagnosis-tier class counts per split, straight from the converted "
+        "annotations. A class missing from a split's columns had zero "
+        "occurrences in that split.",
+        NB, run.mode, "table:diagnosis_label_histogram")
+    _overlap_from_summary = data_summary_01.get("image_overlap")
+    if _overlap_from_summary:
+        written["image_overlap"] = tables.write_table(
+            "image_overlap",
+            [{"metric": key, "value": value} for key, value in _overlap_from_summary.items()
+             if key != "per_split_unique_files"]
+            + [{"metric": "unique_files__{}".format(name), "value": count}
+               for name, count in _overlap_from_summary.get("per_split_unique_files", {}).items()],
+            ["metric", "value"],
+            "Cross-tier / cross-split image duplication by exact content hash (MD5). "
+            "*_overlap_with_training counts diagnosis-tier test/val images that are "
+            "byte-identical to an image somewhere in the pooled training tiers.",
+            NB, run.mode, "table:image_overlap")
+    else:
+        tables.record_not_run("table:image_overlap", NB, run.mode,
+                              "notebook 01's summary has no image_overlap field -- "
+                              "rerun notebook 01 to produce it")
+else:
+    for asset_class in ("table:dataset_audit", "table:diagnosis_label_histogram",
+                        "table:image_overlap"):
+        tables.record_not_run(
+            asset_class, NB, run.mode,
+            "results_raw/{}/summary_01_setup_and_data.json is not present in "
+            "this session -- rerun notebook 01 (CPU only, quota-free) at least "
+            "once alongside this notebook so its summary carries the retained "
+            "audit into this build".format(run.mode))
 
 for name, payloads, axis, asset_class, caption in (
     ("step_sweep", step_results, "sampling_steps", "table:step_sweep",
@@ -1314,12 +1465,35 @@ for name, payloads, axis, asset_class, caption in (
     written[name] = tables.write_table(name, tables.sweep_rows(payloads, axis, extra),
                                        columns, caption, NB, run.mode, asset_class)
 
+# Is a degradation condition beating the clean baseline a reproducible effect
+# or averaging-hidden noise? Pair each condition against clean by inference
+# seed (same weights, same seed, only the input image differs) instead of
+# comparing the two conditions' means.
+if degradation_results and "clean" in degradation_results:
+    written["degradation_seed_consistency"] = tables.write_table(
+        "degradation_seed_consistency",
+        tables.degradation_seed_consistency_rows(degradation_results),
+        ["condition", "n_seeds_paired", "mean_delta_vs_clean", "min_delta",
+         "max_delta", "consistent_direction"],
+        "Diagnosis-tier AP, each degraded condition minus clean, paired by "
+        "inference seed. consistent_direction=True means every paired seed "
+        "agreed in sign -- a property noise does not have.",
+        NB, run.mode, "table:degradation_seed_consistency")
+else:
+    tables.record_not_run("table:degradation_seed_consistency", NB, run.mode,
+                          "no degradation results, or no clean baseline among them")
+
 if runtime_results:
     written["failure_counts"] = tables.write_table(
         "failure_counts", tables.failure_rows(runtime_results),
         ["method", "images", "detections", "images_with_no_detections", "degenerate_box",
-         "box_out_of_image", "box_covers_whole_image", "extreme_aspect_ratio", "crashes"],
-        "Inference failure accounting on the test split.",
+         "box_out_of_image", "box_covers_whole_image", "extreme_aspect_ratio", "crashes",
+         "median_score", "frac_score_above_0.5"],
+        "Inference failure accounting on the test split. median_score and "
+        "frac_score_above_0.5 are computed from the same forward passes, at no "
+        "extra inference cost -- they make 'no detection clears 0.50 "
+        "confidence' a number read off this table instead of an impression "
+        "from a column of AP zeros.",
         NB, run.mode, "table:failure_counts")
 else:
     tables.record_not_run("table:failure_counts", NB, run.mode, "no runtime results")
@@ -1605,6 +1779,15 @@ lines = ["# Reproducibility checklist", "",
          "- inference seeds: {}".format(list(run.eval_seeds)),
          "- multi-GPU: {}".format(json.dumps(training.get("multi_gpu", {}))), "",
          "## Converted dataset", ""]
+_download_info = data_summary.get("download") or {}
+if _download_info.get("resolved_revision"):
+    lines.append("- source: `{}` at commit `{}` (HF dataset cards can change after "
+                 "publication; every finding below is pinned to this exact revision, "
+                 "not an undated 'as downloaded')".format(
+                     _download_info.get("hf_repo_id"), _download_info["resolved_revision"]))
+elif _download_info.get("hf_repo_id"):
+    lines.append("- source: `{}`, exact revision could not be resolved ({})".format(
+        _download_info.get("hf_repo_id"), _download_info.get("resolved_revision_error")))
 for name, digest in (data_summary.get("dataset_hashes") or {}).items():
     lines.append("- `{}`: `{}`".format(name, digest))
 
@@ -1619,6 +1802,39 @@ for record in records:
         record.get("max_iter"), record.get("seed"), record.get("ims_per_batch"),
         record.get("wall_seconds"), record.get("num_gpus"),
         record.get("stopped_on_time_budget")))
+
+# How much of the repo's own documented schedule this run mode actually used.
+# RUN_MODE=full carries the only iteration counts we have any citation for --
+# the paper itself never states one -- so it is the reference point, not a
+# claim about what the original authors ran.
+_FULL_SCHEDULE = setup_env.RUN_MODES["full"]
+_STAGE_BUDGETS = {
+    "quadrant": _FULL_SCHEDULE.quadrant.max_iter,
+    "enumeration": _FULL_SCHEDULE.enumeration.max_iter,
+    "diagnosis": _FULL_SCHEDULE.diagnosis.max_iter,
+}
+_budget_rows = []
+for stage_name, full_iter in _STAGE_BUDGETS.items():
+    stage_records = [r for r in records if stage_name in (r.get("name") or "")]
+    if not stage_records or not full_iter:
+        continue
+    this_iter = stage_records[0].get("max_iter")
+    if this_iter is None:
+        continue
+    _budget_rows.append((stage_name, this_iter, full_iter, this_iter / full_iter))
+if _budget_rows:
+    lines += ["", "## Budget vs. the repo's own schedule", "",
+              "`configs_repro/` ships `RUN_MODE=full` iteration counts "
+              "(`quadrant`/`enumeration`: {}, `diagnosis`: {}) as the repo's own "
+              "training schedule; the paper text does not state one "
+              "independently, so this is the only citable reference point for "
+              "how far from convergence this run mode stops.".format(
+                  _STAGE_BUDGETS["quadrant"], _STAGE_BUDGETS["diagnosis"]), "",
+              "| stage | this run's iterations | `full`-mode iterations | fraction |",
+              "|---|---|---|---|"]
+    for stage_name, this_iter, full_iter, fraction in _budget_rows:
+        lines.append("| {} | {} | {} | {:.1%} |".format(
+            stage_name, this_iter, full_iter, fraction))
 
 lines += ["", "## Exact commands", ""]
 for record in records:

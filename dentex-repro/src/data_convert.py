@@ -130,14 +130,32 @@ def download_and_extract(raw_dir: str, data_dir: str = None,
     fit. Each step is marker-gated, so re-running after a session kill resumes
     instead of restarting.
     """
-    from huggingface_hub import hf_hub_download
+    from huggingface_hub import HfApi, hf_hub_download
 
     paths = layout(data_dir)
     os.makedirs(raw_dir, exist_ok=True)
     for key in ("coco", "images", "subsets", "audit"):
         os.makedirs(paths[key], exist_ok=True)
 
-    report: Dict[str, object] = {"raw_dir": raw_dir, "steps": []}
+    # No `revision=` is pinned below, so this always fetches whatever is at
+    # the HEAD of the HF dataset repo when the run happens -- and HF dataset
+    # cards do get edited after publication. Record exactly which commit that
+    # was, so a claim like "the test split has no Deep Caries label" is tied
+    # to a specific, citable revision instead of an undated "as downloaded".
+    try:
+        resolved_revision = HfApi().dataset_info(HF_REPO_ID).sha
+    except Exception as error:                # noqa: BLE001 — reported, not fatal
+        resolved_revision = None
+        resolved_revision_error = repr(error)
+    else:
+        resolved_revision_error = None
+
+    report: Dict[str, object] = {
+        "raw_dir": raw_dir, "steps": [],
+        "hf_repo_id": HF_REPO_ID,
+        "resolved_revision": resolved_revision,
+        "resolved_revision_error": resolved_revision_error,
+    }
 
     def marker(name: str) -> str:
         return os.path.join(paths["root"], ".{}.done".format(name))
@@ -667,6 +685,69 @@ def dataset_hashes(data_dir: str = None) -> Dict[str, str]:
             full = os.path.join(paths["coco"], name)
             digests[name] = setup_env.file_sha256(full)
     return digests
+
+
+def image_hash_overlap(data_dir: str = None) -> Dict[str, object]:
+    """
+    Cross-tier / cross-split image duplication, by exact file content (MD5).
+
+    Filenames are tier-local, not global ids: two different physical images
+    can share a filename across tiers, and two genuinely identical images can
+    carry different filenames. Content hashing is the only correct way to ask
+    "is this the same X-ray twice". The DENTEX paper states tiers 0
+    (quadrant) and 1 (quadrant-enumeration) are pooled entirely into training
+    with no held-out split of their own -- so an overlap between a
+    diagnosis-tier test/val image and a training-tier image means the
+    hierarchical pipeline may already have seen that image's pixels, under a
+    different annotation tier, before "testing" on it at the diagnosis tier.
+    That would be a property of the original authors' own experimental
+    design and the public release, inherited by any faithful reproduction --
+    not an error introduced by this conversion. CPU-only: hashing files the
+    download step already fetched costs no GPU time.
+    """
+    import hashlib
+
+    paths = layout(data_dir)
+    splits = {
+        "quadrant_train": paths["img_quadrant"],
+        "quadrant_enumeration_train": paths["img_enumeration"],
+        "diagnosis_train": paths["img_diagnosis"],
+        "diagnosis_val": paths["img_val"],
+        "diagnosis_test": paths["img_test"],
+    }
+    hashes_by_split: Dict[str, set] = {}
+    for name, directory in splits.items():
+        digests = set()
+        if os.path.isdir(directory):
+            for filename in os.listdir(directory):
+                full = os.path.join(directory, filename)
+                if os.path.isfile(full):
+                    with open(full, "rb") as handle:
+                        digests.add(hashlib.md5(handle.read()).hexdigest())
+        hashes_by_split[name] = digests
+
+    training = (hashes_by_split["quadrant_train"]
+                | hashes_by_split["quadrant_enumeration_train"]
+                | hashes_by_split["diagnosis_train"])
+    all_hashes = set().union(*hashes_by_split.values()) if hashes_by_split else set()
+
+    return {
+        "total_image_files": sum(len(v) for v in hashes_by_split.values()),
+        "unique_images_by_content": len(all_hashes),
+        "per_split_unique_files": {name: len(v) for name, v in hashes_by_split.items()},
+        "test_overlap_with_training": len(hashes_by_split["diagnosis_test"] & training),
+        "val_overlap_with_training": len(hashes_by_split["diagnosis_val"] & training),
+        "quadrant_x_quadrant_enumeration": len(
+            hashes_by_split["quadrant_train"] & hashes_by_split["quadrant_enumeration_train"]),
+        "quadrant_x_diagnosis_train": len(
+            hashes_by_split["quadrant_train"] & hashes_by_split["diagnosis_train"]),
+        "quadrant_enumeration_x_diagnosis_train": len(
+            hashes_by_split["quadrant_enumeration_train"] & hashes_by_split["diagnosis_train"]),
+        "common_to_all_three_training_tiers": len(
+            hashes_by_split["quadrant_train"]
+            & hashes_by_split["quadrant_enumeration_train"]
+            & hashes_by_split["diagnosis_train"]),
+    }
 
 
 # --------------------------------------------------------------------------

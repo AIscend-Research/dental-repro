@@ -1,0 +1,4 @@
+class,Ours_full_AP,Ours_wo_Manipulation_AP,delta,share_of_tier_margin_pct,direction
+CariesDisease,3.618,4.786,-1.168,-17.80,favors ablated
+ImpactedDisease,11.12,3.364,7.759,118.10,favors full
+Periapical LesionDisease,0.167,0.190,-0.023,-0.400,favors ablated

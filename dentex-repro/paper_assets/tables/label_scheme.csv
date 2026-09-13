@@ -1,0 +1,10 @@
+code,turkish_word,gloss,task_class,note
+0,saglam,healthy tooth,False,
+1,curuk,Caries,True,
+2,kuretaj,curettage,False,
+3,kanal,root canal treatment,False,
+5,cekim,extraction,False,
+6,gomulu,Impacted,True,
+7,lezyon,Periapical Lesion,True,
+8,kirik,fracture,False,
+(none),derin curuk / deep caries,Deep Caries,False,no code in this scheme -- see table:diagnosis_label_histogram

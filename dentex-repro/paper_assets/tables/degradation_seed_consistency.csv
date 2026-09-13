@@ -1,0 +1,7 @@
+condition,n_seeds_paired,mean_delta_vs_clean,min_delta,max_delta,consistent_direction
+blur_sigma2,2,0.355,0.218,0.493,True
+blur_sigma4,2,-0.633,-0.920,-0.346,True
+downscale_25pct,2,0.522,0.433,0.610,True
+downscale_50pct,2,0.223,0.130,0.316,True
+jpeg_q20,2,0.269,0.019,0.519,True
+jpeg_q50,2,-0.016,-0.106,0.075,False

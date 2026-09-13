@@ -294,6 +294,80 @@ def sweep_rows(payloads: Dict[str, Dict[str, object]], axis_name: str,
     return rows
 
 
+def degradation_seed_consistency_rows(
+        degradation_results: Dict[str, Dict[str, object]], clean_key: str = "clean",
+        tier: str = "diagnosis", metric: str = "AP") -> List[Dict[str, object]]:
+    """
+    Per-seed, paired condition-minus-clean deltas at one tier/metric.
+
+    An averaged degradation-vs-clean gap can look like noise even when every
+    individual inference seed agrees on its sign -- averaging is exactly what
+    hides that agreement. Pairing by seed (same weights, same seed, only the
+    input image differs) exposes whether a condition beating clean is a
+    reproducible effect or a coin flip that happened to land the same way on
+    average. ``consistent_direction`` is True only when every paired seed
+    agrees in sign; that is the property "noise" does not have.
+    """
+    def by_seed(payload):
+        return {r.get("inference_seed"): r["tiers"].get(tier, {}).get("metrics", {}).get(metric)
+                for r in (payload or {}).get("runs") or []}
+
+    clean_by_seed = by_seed(degradation_results.get(clean_key))
+    rows = []
+    for condition, payload in degradation_results.items():
+        if condition == clean_key:
+            continue
+        cond_by_seed = by_seed(payload)
+        diffs = {}
+        for seed, clean_value in clean_by_seed.items():
+            cond_value = cond_by_seed.get(seed)
+            if (cond_value is None or clean_value is None
+                    or not math.isfinite(cond_value) or not math.isfinite(clean_value)):
+                continue
+            diffs[seed] = cond_value - clean_value
+        if not diffs:
+            continue
+        signs = {1 if d > 0 else -1 if d < 0 else 0 for d in diffs.values()}
+        rows.append({
+            "condition": condition,
+            "n_seeds_paired": len(diffs),
+            "mean_delta_vs_clean": round(sum(diffs.values()) / len(diffs), 3),
+            "min_delta": round(min(diffs.values()), 3),
+            "max_delta": round(max(diffs.values()), 3),
+            "consistent_direction": len(signs - {0}) <= 1,
+        })
+    return rows
+
+
+def label_scheme_rows() -> List[Dict[str, object]]:
+    """
+    The test split's 9-code Turkish labelling scheme, spelled out as a table.
+
+    Static -- derived from ``data_convert.EXPECTED_WORD_CODES`` and
+    ``OUT_OF_TASK_LABELS``, not from any experiment run -- so it needs no
+    dataset, no GPU, and cannot drift out of date with the converter itself.
+    Exists so a reader can check "does the test release have a Deep Caries
+    code" without reading Python: it does not, which is why that row is
+    listed with no code at all.
+    """
+    from . import data_convert
+
+    task_words = {"curuk": "Caries", "gomulu": "Impacted", "lezyon": "Periapical Lesion"}
+    rows = []
+    for word, code in sorted(data_convert.EXPECTED_WORD_CODES.items(), key=lambda kv: kv[1]):
+        if word in task_words:
+            gloss, task_class = task_words[word], True
+        else:
+            gloss, task_class = data_convert.OUT_OF_TASK_LABELS.get(word, "?"), False
+            gloss = gloss.split(" (code")[0]
+        rows.append({"code": code, "turkish_word": word, "gloss": gloss,
+                     "task_class": task_class, "note": ""})
+    rows.append({"code": "(none)", "turkish_word": "derin curuk / deep caries",
+                 "gloss": "Deep Caries", "task_class": False,
+                 "note": "no code in this scheme -- see table:diagnosis_label_histogram"})
+    return rows
+
+
 def audit_rows(audits: Dict[str, Dict[str, object]]) -> List[Dict[str, object]]:
     rows = []
     for name, audit in audits.items():
@@ -314,10 +388,37 @@ def audit_rows(audits: Dict[str, Dict[str, object]]) -> List[Dict[str, object]]:
     return rows
 
 
+def diagnosis_label_histogram_rows(audits: Dict[str, Dict[str, object]]) -> List[Dict[str, object]]:
+    """
+    Raw diagnosis-tier class counts per split, independent of any training run.
+
+    Exists to make one claim independently checkable by a reader: which
+    diagnosis classes actually have ground truth in each split, by name and
+    count, straight out of the converted annotations. A class absent from a
+    split's histogram had zero occurrences in that split's converted JSON --
+    it is not implied or inferred, it is what ``Counter`` returned.
+    """
+    all_classes = sorted({
+        name for audit in audits.values()
+        for name in audit.get("class_histograms", {}).get("diagnosis", {})
+    })
+    rows = []
+    for split, audit in audits.items():
+        if not audit.get("tier_coverage", {}).get("tier2_diagnosis"):
+            continue                      # split carries no diagnosis-tier labels at all
+        histogram = audit.get("class_histograms", {}).get("diagnosis", {})
+        row = {"split": split}
+        for class_name in all_classes:
+            row[class_name] = histogram.get(class_name, 0)
+        rows.append(row)
+    return rows
+
+
 def failure_rows(runtimes: Dict[str, Dict[str, object]]) -> List[Dict[str, object]]:
     rows = []
     for label, summary in runtimes.items():
         counts = summary.get("failure_counts", {}) or {}
+        scores = summary.get("score_stats") or {}
         rows.append({
             "method": label,
             "images": summary.get("images"),
@@ -328,6 +429,8 @@ def failure_rows(runtimes: Dict[str, Dict[str, object]]) -> List[Dict[str, objec
             "box_covers_whole_image": counts.get("box_covers_whole_image", 0),
             "extreme_aspect_ratio": counts.get("extreme_aspect_ratio", 0),
             "crashes": summary.get("crashes", 0),
+            "median_score": scores.get("median"),
+            "frac_score_above_0.5": scores.get("frac_above_0.5"),
         })
     return rows
 
@@ -373,6 +476,50 @@ def per_class_rows(results: Dict[str, Dict[str, object]]) -> List[Dict[str, obje
                     "n_seeds": len(values),
                     "note": "OUR EXTENSION — not reported in the original paper",
                 })
+    return rows
+
+
+def manipulation_margin_rows(results: Dict[str, Dict[str, object]], tier: str = "diagnosis",
+                             full: str = "Ours_full",
+                             ablated: str = "Ours_wo_Manipulation") -> List[Dict[str, object]]:
+    """
+    Per-class decomposition of the noisy-box-manipulation margin at one tier.
+
+    A tier-level AP gap between the full model and the ablation can hide a
+    reversal -- one class carrying the entire margin while another moves the
+    opposite way, which a reader cannot see from the aggregate number or a bar
+    chart alone. This makes that check explicit and exact instead of visual.
+    """
+    def per_class_means(label: str) -> Dict[str, float]:
+        runs = (results.get(label) or {}).get("runs") or []
+        by_class: Dict[str, List[float]] = {}
+        for run in runs:
+            for name, value in (run["tiers"].get(tier, {})
+                                .get("per_class_AP", {}) or {}).items():
+                if isinstance(value, (int, float)) and math.isfinite(value):
+                    by_class.setdefault(name, []).append(value)
+        return {name: sum(values) / len(values) for name, values in by_class.items()
+                if values}
+
+    full_by_class = per_class_means(full)
+    ablated_by_class = per_class_means(ablated)
+    deltas = {}
+    for name in sorted(set(full_by_class) & set(ablated_by_class)):
+        deltas[name] = full_by_class[name] - ablated_by_class[name]
+    total_margin = sum(deltas.values())
+
+    rows = []
+    for name, delta in deltas.items():
+        rows.append({
+            "class": name,
+            "{}_AP".format(full): round(full_by_class[name], 3),
+            "{}_AP".format(ablated): round(ablated_by_class[name], 3),
+            "delta": round(delta, 3),
+            "share_of_tier_margin_pct": (round(100 * delta / total_margin, 1)
+                                        if total_margin else None),
+            "direction": ("favors full" if delta > 0 else
+                         "favors ablated" if delta < 0 else "tie"),
+        })
     return rows
 
 

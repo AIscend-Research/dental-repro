@@ -1,0 +1,4 @@
+split,Caries,Deep Caries,Impacted,Periapical Lesion
+diagnosis_train,2189,578,604,158
+diagnosis_val,101,32,40,9
+diagnosis_test,747,0,221,75
