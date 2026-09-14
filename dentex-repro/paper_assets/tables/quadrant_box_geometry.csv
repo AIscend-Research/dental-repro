@@ -1,0 +1,5 @@
+quadrant_category_id,n_boxes,mean_area_fraction_of_image,mean_center_x,mean_center_y
+0,693,0.083,0.373,0.415
+1,693,0.083,0.632,0.416
+2,693,0.107,0.646,0.656
+3,693,0.109,0.361,0.662

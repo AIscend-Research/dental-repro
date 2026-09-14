@@ -368,6 +368,25 @@ def label_scheme_rows() -> List[Dict[str, object]]:
     return rows
 
 
+def quadrant_geometry_rows(geometry: Dict[str, object]) -> List[Dict[str, object]]:
+    """
+    One row per tier-0 quadrant category: box count, mean area fraction of
+    the image, mean box center. A box averaging ~25% of the image would read
+    as a literal quarter-image region; anything much smaller is a tight
+    tooth-row box -- see ``data_convert.quadrant_box_geometry``.
+    """
+    rows = []
+    for quadrant, stats in sorted(geometry.get("per_quadrant", {}).items()):
+        rows.append({
+            "quadrant_category_id": quadrant,
+            "n_boxes": stats["n"],
+            "mean_area_fraction_of_image": stats["mean_area_fraction"],
+            "mean_center_x": stats["mean_center_xy"][0],
+            "mean_center_y": stats["mean_center_xy"][1],
+        })
+    return rows
+
+
 def audit_rows(audits: Dict[str, Dict[str, object]]) -> List[Dict[str, object]]:
     rows = []
     for name, audit in audits.items():

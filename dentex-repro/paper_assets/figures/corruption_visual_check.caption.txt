@@ -1,0 +1,1 @@
+Same two test images under each corruption condition, produced by the same code path notebook 03's degradation grid uses, with no model involved. Exists to rule out a pipeline defect (wrong mode, size, or channel corruption) as the explanation for degraded conditions occasionally outscoring clean in table:degradation, before spending any inference on it.

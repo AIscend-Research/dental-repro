@@ -1639,5 +1639,46 @@
   },
   "license_note": "License discrepancy: the HierarchicalDet GitHub repository states CC BY-SA for DENTEX, while the HuggingFace dataset card states CC BY-NC-SA. The stricter reading (non-commercial) is assumed for this reproduction. This is reported, not resolved \u2014 it is a property of the release.",
   "notebook": "01_setup_and_data",
-  "written_at": "2026-09-13T17:20:12-0700"
+  "written_at": "2026-09-13T17:20:12-0700",
+  "quadrant_box_geometry": {
+    "images_with_annotations": 693,
+    "boxes_per_image_histogram": {
+      "4": 693
+    },
+    "mean_box_area_fraction": 0.0955,
+    "per_quadrant": {
+      "0": {
+        "n": 693,
+        "mean_area_fraction": 0.0834,
+        "mean_center_xy": [
+          0.373,
+          0.415
+        ]
+      },
+      "1": {
+        "n": 693,
+        "mean_area_fraction": 0.0831,
+        "mean_center_xy": [
+          0.632,
+          0.416
+        ]
+      },
+      "2": {
+        "n": 693,
+        "mean_area_fraction": 0.1067,
+        "mean_center_xy": [
+          0.646,
+          0.656
+        ]
+      },
+      "3": {
+        "n": 693,
+        "mean_area_fraction": 0.1088,
+        "mean_center_xy": [
+          0.361,
+          0.662
+        ]
+      }
+    }
+  }
 }

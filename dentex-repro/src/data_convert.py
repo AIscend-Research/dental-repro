@@ -750,6 +750,56 @@ def image_hash_overlap(data_dir: str = None) -> Dict[str, object]:
     }
 
 
+def quadrant_box_geometry(json_path: str) -> Dict[str, object]:
+    """
+    Characterizes the tier-0 quadrant boxes: how big are they, and where do
+    they sit, relative to the image.
+
+    A "quadrant box" reads ambiguously -- a literal quarter of the image, or
+    a tight bounding box around the visible teeth in that anatomical
+    quadrant? This answers it with numbers instead of a guess: a box
+    covering a literal quarter of a rectangular image would average ~25% of
+    the image area; anything much smaller is a tight tooth-row box, not a
+    region box. If the original paper's tier-0 evaluation used a different
+    convention (region boxes), an AP comparison against this conversion's
+    tier-0 numbers is comparing two different definitions of the task, not
+    two results on the same task.
+    """
+    data = _load(json_path)
+    images = {image["id"]: image for image in data["images"]}
+    by_image: Dict[int, int] = {}
+    per_quadrant: Dict[int, List[Tuple[float, float, float]]] = {}
+    for annotation in data["annotations"]:
+        image = images.get(annotation["image_id"])
+        if image is None:
+            continue
+        by_image[annotation["image_id"]] = by_image.get(annotation["image_id"], 0) + 1
+        x, y, w, h = annotation["bbox"]
+        area_frac = (w * h) / (image["width"] * image["height"])
+        center = ((x + w / 2) / image["width"], (y + h / 2) / image["height"])
+        quadrant = annotation.get("category_id_1")
+        if quadrant is not None:
+            per_quadrant.setdefault(quadrant, []).append((area_frac, center[0], center[1]))
+
+    boxes_per_image = Counter(by_image.values())
+    all_fracs = [row[0] for rows in per_quadrant.values() for row in rows]
+    return {
+        "images_with_annotations": len(by_image),
+        "boxes_per_image_histogram": dict(sorted(boxes_per_image.items())),
+        "mean_box_area_fraction": (round(sum(all_fracs) / len(all_fracs), 4)
+                                   if all_fracs else None),
+        "per_quadrant": {
+            str(quadrant): {
+                "n": len(rows),
+                "mean_area_fraction": round(sum(r[0] for r in rows) / len(rows), 4),
+                "mean_center_xy": [round(sum(r[1] for r in rows) / len(rows), 3),
+                                   round(sum(r[2] for r in rows) / len(rows), 3)],
+            }
+            for quadrant, rows in sorted(per_quadrant.items())
+        },
+    }
+
+
 # --------------------------------------------------------------------------
 # Audit
 # --------------------------------------------------------------------------

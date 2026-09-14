@@ -662,6 +662,62 @@
       "timestamp": "2026-09-13T17:21:49-0700",
       "sha256": "164de826d340febc524e521914140b8e9c68a2c77e8154adc2e67fe8033bf92c",
       "bytes": 3021
+    },
+    {
+      "path": "paper_assets/tables/quadrant_box_geometry.csv",
+      "asset_class": "table:quadrant_box_geometry",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco/train_quadrant.json"
+      ],
+      "note": "",
+      "timestamp": "2026-09-13T17:38:23-0700",
+      "sha256": "765c5d7436d1b02d5adf642a6b933f68ecdbb084eac2c77e368d903cdc4a7c81",
+      "bytes": 186
+    },
+    {
+      "path": "paper_assets/tables/quadrant_box_geometry.tex",
+      "asset_class": "table:quadrant_box_geometry",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco/train_quadrant.json"
+      ],
+      "note": "",
+      "timestamp": "2026-09-13T17:38:23-0700",
+      "sha256": "55cd919e64467ee897c48ae0150a93f28756390b858f5ea1372790dc3607512c",
+      "bytes": 798
+    },
+    {
+      "path": "paper_assets/figures/corruption_visual_check.pdf",
+      "asset_class": "figure:corruption_visual_check",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "Same two test images under each corruption condition, produced by the same code path notebook 03's degradation grid uses, with no model involved. Exists to rule out a pipeline defect (wrong mode, size, or channel corruption) as the explanation for degraded conditions occasionally outscoring clean in table:degradation, before spending any inference on it.",
+      "timestamp": "2026-09-13T17:39:56-0700",
+      "sha256": "774d3cbc5bb32f0aceabc70d418d8a457002ed931e0650434b3322644f232166",
+      "bytes": 798841
+    },
+    {
+      "path": "paper_assets/figures/corruption_visual_check.png",
+      "asset_class": "figure:corruption_visual_check",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "Same two test images under each corruption condition, produced by the same code path notebook 03's degradation grid uses, with no model involved. Exists to rule out a pipeline defect (wrong mode, size, or channel corruption) as the explanation for degraded conditions occasionally outscoring clean in table:degradation, before spending any inference on it.",
+      "timestamp": "2026-09-13T17:39:56-0700",
+      "sha256": "fe663d15a303dd0b60cb75cdca4d05c305a1e91bf13bb0597b73c7d2f196d142",
+      "bytes": 773378
     }
   ],
   "environment": {
@@ -1633,5 +1689,5 @@
       "zstandard==0.25.0"
     ]
   },
-  "updated_at": "2026-09-13T17:21:49-0700"
+  "updated_at": "2026-09-13T17:39:56-0700"
 }

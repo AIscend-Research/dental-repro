@@ -39,6 +39,8 @@ REQUIRED_ASSET_CLASSES = (
     "table:diagnosis_label_histogram",
     "table:label_scheme",
     "table:image_overlap",
+    "table:quadrant_box_geometry",
+    "figure:corruption_visual_check",
     "table:failure_counts",
     "figure:ap_vs_steps",
     "figure:degradation",

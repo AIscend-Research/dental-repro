@@ -338,6 +338,57 @@ tables.write_table(
     "Deep Caries has no code in this scheme at all.",
     "01_setup_and_data", run.mode, "table:label_scheme")
 
+# ---- What is a tier-0 "quadrant box", precisely? ----
+# A literal quarter-image region averages ~25% area; this answers whether
+# that is what tier-0 actually evaluates, with numbers instead of a guess.
+quadrant_geometry = data_convert.quadrant_box_geometry(paths["train_quadrant"])
+print(json.dumps(quadrant_geometry, indent=2))
+tables.write_table(
+    "quadrant_box_geometry", tables.quadrant_geometry_rows(quadrant_geometry),
+    ["quadrant_category_id", "n_boxes", "mean_area_fraction_of_image",
+     "mean_center_x", "mean_center_y"],
+    "Tier-0 quadrant box geometry (train split). mean_area_fraction_of_image "
+    "near 0.25 would mean a literal quarter-image region; well below that "
+    "means a tight bounding box around the visible teeth in that quadrant.",
+    "01_setup_and_data", run.mode, "table:quadrant_box_geometry",
+    inputs=[paths["train_quadrant"]])
+
+# ---- Corruption pipeline visual check (CPU-only, no GPU or model needed) ----
+# Answers "is this a pipeline bug" for the degradation grid by looking at what
+# it actually produces, on real images, before any inference is spent on it.
+from PIL import Image
+from src import degradations
+
+_check_names = sorted(f for f in os.listdir(paths["img_test"])
+                      if f.lower().endswith((".png", ".jpg", ".jpeg")))[:2]
+_check_conditions = [("none", None), ("blur", 4.0), ("downscale", 0.25), ("jpeg", 20)]
+_check_panels = []
+for _name in _check_names:
+    with Image.open(os.path.join(paths["img_test"], _name)) as _image:
+        _image.load()
+        for _kind, _severity in _check_conditions:
+            _shown = _image if _kind == "none" else degradations.degrade_image(_image, _kind, _severity)
+            _label = "clean" if _kind == "none" else degradations.condition_label(_kind, _severity)
+            _tmp_path = os.path.join(paths["audit"], "_corruption_check_{}_{}.png".format(_name, _label))
+            _shown.save(_tmp_path, format="PNG")
+            _check_panels.append({"image_path": _tmp_path,
+                                  "title": "{}: {}".format(_name, _label), "gt": [], "pred": []})
+
+_check_figure = figures.overlay_grid(_check_panels, columns=len(_check_conditions), panel_height=2.2,
+                                     title="Corruption pipeline visual check (clean vs. degraded, no model)")
+figures.save_figure(
+    _check_figure, "corruption_visual_check",
+    "Same two test images under each corruption condition, produced by the same "
+    "code path notebook 03's degradation grid uses, with no model involved. "
+    "Exists to rule out a pipeline defect (wrong mode, size, or channel "
+    "corruption) as the explanation for degraded conditions occasionally "
+    "outscoring clean in table:degradation, before spending any inference on it.",
+    "01_setup_and_data", run.mode, "figure:corruption_visual_check")
+for _name in _check_names:
+    for _kind, _severity in _check_conditions:
+        _label = "clean" if _kind == "none" else degradations.condition_label(_kind, _severity)
+        os.remove(os.path.join(paths["audit"], "_corruption_check_{}_{}.png".format(_name, _label)))
+
 # Raw per-class diagnosis counts, independent of any training run -- this is
 # the table a reader checks to verify the Deep Caries finding themselves
 # instead of taking the deviation log's word for it.
@@ -409,6 +460,7 @@ summary = {
     "paths": paths,
     "audits": audits,
     "image_overlap": overlap,
+    "quadrant_box_geometry": quadrant_geometry,
     "published_counts": actual_counts,
     "test_parse_report": {k: v for k, v in report.items() if k != "raw_label_counts"},
     "registration": registration_report,
@@ -1431,9 +1483,24 @@ if audits_from_summary:
         tables.record_not_run("table:image_overlap", NB, run.mode,
                               "notebook 01's summary has no image_overlap field -- "
                               "rerun notebook 01 to produce it")
+    _geometry_from_summary = data_summary_01.get("quadrant_box_geometry")
+    if _geometry_from_summary:
+        written["quadrant_box_geometry"] = tables.write_table(
+            "quadrant_box_geometry", tables.quadrant_geometry_rows(_geometry_from_summary),
+            ["quadrant_category_id", "n_boxes", "mean_area_fraction_of_image",
+             "mean_center_x", "mean_center_y"],
+            "Tier-0 quadrant box geometry (train split). "
+            "mean_area_fraction_of_image near 0.25 would mean a literal "
+            "quarter-image region; well below that means a tight bounding box "
+            "around the visible teeth in that quadrant.",
+            NB, run.mode, "table:quadrant_box_geometry")
+    else:
+        tables.record_not_run("table:quadrant_box_geometry", NB, run.mode,
+                              "notebook 01's summary has no quadrant_box_geometry field -- "
+                              "rerun notebook 01 to produce it")
 else:
     for asset_class in ("table:dataset_audit", "table:diagnosis_label_histogram",
-                        "table:image_overlap"):
+                        "table:image_overlap", "table:quadrant_box_geometry"):
         tables.record_not_run(
             asset_class, NB, run.mode,
             "results_raw/{}/summary_01_setup_and_data.json is not present in "
