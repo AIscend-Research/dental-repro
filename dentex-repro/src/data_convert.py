@@ -990,6 +990,42 @@ def build_clean_stress_subsets(json_path: str) -> Dict[str, object]:
     }
 
 
+def clean_stress_confound_check(subsets: Dict[str, object], json_path: str) -> Dict[str, object]:
+    """
+    Does "stress" differ from "clean" on anything besides annotation count?
+
+    The split is defined BY annotation count and diagnosis-class count, both
+    of which sit inside the AP denominator/numerator: an image with more
+    ground-truth boxes gives a detector more chances to register a match,
+    so a "stress" set built this way can score higher AP than "clean" for a
+    purely mechanical reason, with nothing to do with the model handling
+    those images better. This checks the one confound outside that
+    denominator that is cheap to check without a model -- image resolution/
+    area -- so a reader can see whether the two subsets are at least matched
+    on that axis, instead of taking "restratify on something outside the AP
+    denominator" as still-open work with no numbers behind it.
+    """
+    data = _load(json_path)
+    images = {image["id"]: image for image in data["images"]}
+    by_image: Dict[int, int] = {}
+    for annotation in data["annotations"]:
+        by_image[annotation["image_id"]] = by_image.get(annotation["image_id"], 0) + 1
+
+    result = {}
+    for name in ("clean", "stress"):
+        ids = subsets[name]["image_ids"]
+        counts = [by_image.get(i, 0) for i in ids]
+        areas = [images[i]["width"] * images[i]["height"] for i in ids if i in images]
+        result[name] = {
+            "n_images": len(ids),
+            "mean_annotations_per_image": round(sum(counts) / len(counts), 2) if counts else None,
+            "mean_image_area_px": round(sum(areas) / len(areas), 0) if areas else None,
+            "min_image_area_px": min(areas) if areas else None,
+            "max_image_area_px": max(areas) if areas else None,
+        }
+    return result
+
+
 def subset_json(source_json: str, image_ids: Sequence[int], out_path: str) -> str:
     """Write a COCO file restricted to ``image_ids`` (for subset evaluation)."""
     data = _load(source_json)

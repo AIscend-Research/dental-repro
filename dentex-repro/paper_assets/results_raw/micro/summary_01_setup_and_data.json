@@ -1680,5 +1680,21 @@
         ]
       }
     }
+  },
+  "clean_stress_confound": {
+    "clean": {
+      "n_images": 143,
+      "mean_annotations_per_image": 3.55,
+      "mean_image_area_px": 3942471.0,
+      "min_image_area_px": 1928576,
+      "max_image_area_px": 4724736
+    },
+    "stress": {
+      "n_images": 51,
+      "mean_annotations_per_image": 6.59,
+      "mean_image_area_px": 3865633.0,
+      "min_image_area_px": 1928576,
+      "max_image_area_px": 4724736
+    }
   }
 }

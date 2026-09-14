@@ -718,6 +718,36 @@
       "timestamp": "2026-09-13T17:39:56-0700",
       "sha256": "fe663d15a303dd0b60cb75cdca4d05c305a1e91bf13bb0597b73c7d2f196d142",
       "bytes": 773378
+    },
+    {
+      "path": "paper_assets/tables/clean_stress_confound.csv",
+      "asset_class": "table:clean_stress_confound",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco/test_diagnosis.json"
+      ],
+      "note": "",
+      "timestamp": "2026-09-13T18:03:47-0700",
+      "sha256": "ed1d6313991616166c6a30d84f4fbac70f3499c1990153d37c47253ac7c4de8f",
+      "bytes": 187
+    },
+    {
+      "path": "paper_assets/tables/clean_stress_confound.tex",
+      "asset_class": "table:clean_stress_confound",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco/test_diagnosis.json"
+      ],
+      "note": "",
+      "timestamp": "2026-09-13T18:03:47-0700",
+      "sha256": "50a2d8630fe0f568fb15afe7fb3c7f5f43f756a3e0837bcbc84dab30bf2b393b",
+      "bytes": 646
     }
   ],
   "environment": {
@@ -1689,5 +1719,5 @@
       "zstandard==0.25.0"
     ]
   },
-  "updated_at": "2026-09-13T17:39:56-0700"
+  "updated_at": "2026-09-13T18:03:47-0700"
 }

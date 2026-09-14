@@ -387,6 +387,16 @@ def quadrant_geometry_rows(geometry: Dict[str, object]) -> List[Dict[str, object
     return rows
 
 
+def clean_stress_confound_rows(confound: Dict[str, object]) -> List[Dict[str, object]]:
+    """One row per subset: is it matched with the other on anything besides
+    the annotation count that defines the split? See
+    ``data_convert.clean_stress_confound_check``."""
+    rows = []
+    for name, stats in confound.items():
+        rows.append({"subset": name, **stats})
+    return rows
+
+
 def audit_rows(audits: Dict[str, Dict[str, object]]) -> List[Dict[str, object]]:
     rows = []
     for name, audit in audits.items():

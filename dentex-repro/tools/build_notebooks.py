@@ -273,6 +273,28 @@ for which in ("clean", "stress"):
     print("{:6s} {:>3} images -> {}".format(which, len(subsets[which]["image_ids"]), out))
 print()
 print(subsets["rule"])
+
+# ---- Is "stress" different from "clean" on anything besides box count? ----
+# The split is defined BY annotation count, which sits inside the AP
+# denominator -- more ground truth per image gives more chances to match,
+# so a "stress" AP above "clean" AP can be that mechanical effect, not the
+# model handling stress cases better. Checked here, CPU-only, against the
+# one confound (image resolution) that doesn't need a model.
+confound = data_convert.clean_stress_confound_check(subsets, paths["test_diagnosis"])
+print(json.dumps(confound, indent=2))
+tables.write_table(
+    "clean_stress_confound", tables.clean_stress_confound_rows(confound),
+    ["subset", "n_images", "mean_annotations_per_image", "mean_image_area_px",
+     "min_image_area_px", "max_image_area_px"],
+    "Clean vs. stress subset comparison on axes outside the split's own "
+    "definition. mean_annotations_per_image differs by construction (that is "
+    "the split rule); mean_image_area_px close between the two rows means "
+    "resolution is not a confound, but the split is still defined by box "
+    "count, which sits inside the AP denominator -- a stress-subset AP above "
+    "the clean-subset AP is not on its own evidence the model handles stress "
+    "cases better.",
+    "01_setup_and_data", run.mode, "table:clean_stress_confound",
+    inputs=[paths["test_diagnosis"]])
 '''),
         ("code", '''\
 # ---- Ground-truth sanity figure: 5 random images per tier, boxes drawn ----
@@ -461,6 +483,7 @@ summary = {
     "audits": audits,
     "image_overlap": overlap,
     "quadrant_box_geometry": quadrant_geometry,
+    "clean_stress_confound": confound,
     "published_counts": actual_counts,
     "test_parse_report": {k: v for k, v in report.items() if k != "raw_label_counts"},
     "registration": registration_report,
@@ -1553,9 +1576,28 @@ if audits_from_summary:
         tables.record_not_run("table:quadrant_box_geometry", NB, run.mode,
                               "notebook 01's summary has no quadrant_box_geometry field -- "
                               "rerun notebook 01 to produce it")
+    _confound_from_summary = data_summary_01.get("clean_stress_confound")
+    if _confound_from_summary:
+        written["clean_stress_confound"] = tables.write_table(
+            "clean_stress_confound", tables.clean_stress_confound_rows(_confound_from_summary),
+            ["subset", "n_images", "mean_annotations_per_image", "mean_image_area_px",
+             "min_image_area_px", "max_image_area_px"],
+            "Clean vs. stress subset comparison on axes outside the split's own "
+            "definition. mean_annotations_per_image differs by construction (that "
+            "is the split rule); mean_image_area_px close between the two rows "
+            "means resolution is not a confound, but the split is still defined "
+            "by box count, which sits inside the AP denominator -- a "
+            "stress-subset AP above the clean-subset AP is not on its own "
+            "evidence the model handles stress cases better.",
+            NB, run.mode, "table:clean_stress_confound")
+    else:
+        tables.record_not_run("table:clean_stress_confound", NB, run.mode,
+                              "notebook 01's summary has no clean_stress_confound field -- "
+                              "rerun notebook 01 to produce it")
 else:
     for asset_class in ("table:dataset_audit", "table:diagnosis_label_histogram",
-                        "table:image_overlap", "table:quadrant_box_geometry"):
+                        "table:image_overlap", "table:quadrant_box_geometry",
+                        "table:clean_stress_confound"):
         tables.record_not_run(
             asset_class, NB, run.mode,
             "results_raw/{}/summary_01_setup_and_data.json is not present in "

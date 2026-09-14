@@ -1,0 +1,3 @@
+subset,n_images,mean_annotations_per_image,mean_image_area_px,min_image_area_px,max_image_area_px
+clean,143,3.550,3942471.00,1928576,4724736
+stress,51,6.590,3865633.00,1928576,4724736
