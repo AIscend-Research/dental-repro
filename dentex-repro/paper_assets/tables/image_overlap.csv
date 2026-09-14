@@ -1,0 +1,14 @@
+metric,value
+total_image_files,2304
+unique_images_by_content,1334
+test_overlap_with_training,95
+val_overlap_with_training,20
+quadrant_x_quadrant_enumeration,573
+quadrant_x_diagnosis_train,259
+quadrant_enumeration_x_diagnosis_train,260
+common_to_all_three_training_tiers,237
+unique_files__quadrant_train,676
+unique_files__quadrant_enumeration_train,623
+unique_files__diagnosis_train,705
+unique_files__diagnosis_val,50
+unique_files__diagnosis_test,250

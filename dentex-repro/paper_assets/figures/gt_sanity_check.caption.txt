@@ -1,0 +1,1 @@
+Ground-truth annotations overlaid on five randomly sampled images from each DENTEX tier. Labels read quadrant/enumeration/diagnosis.

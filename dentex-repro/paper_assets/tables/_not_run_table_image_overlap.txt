@@ -1,2 +1,0 @@
-table:image_overlap was not produced in RUN_MODE=micro.
-Reason: no local DENTEX image files available in this environment to hash; code is wired in and will produce this table for real the next time notebook 01 runs on Kaggle

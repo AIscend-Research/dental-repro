@@ -2,19 +2,6 @@
   "created_at": "2026-08-10T19:51:40+0000",
   "assets": [
     {
-      "path": "paper_assets/figures/_not_run_figure_gt_sanity.txt",
-      "asset_class": "figure:gt_sanity",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "not run",
-      "config_hash": null,
-      "inputs": [],
-      "note": "the manifest cited this asset but the file is not in this repository (paper_assets/figures/gt_sanity_check.pdf, paper_assets/figures/gt_sanity_check.png). It was produced by a session whose output was not carried across.",
-      "timestamp": "2026-08-16T14:50:02-0700",
-      "sha256": null,
-      "bytes": null
-    },
-    {
       "path": "paper_assets/figures/_not_run_figure_qualitative.txt",
       "asset_class": "figure:qualitative",
       "notebook": "03_evaluate_and_build_assets",
@@ -444,32 +431,6 @@
       "bytes": 75016
     },
     {
-      "path": "paper_assets/repro_checklist.md",
-      "asset_class": "doc:repro_checklist",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "produced",
-      "config_hash": null,
-      "inputs": [],
-      "note": "",
-      "timestamp": "2026-08-20T10:02:55-0700",
-      "sha256": "2727d1819096439f0e74f6b266be994b01c3793e0bef642a24302466d7680827",
-      "bytes": 5982
-    },
-    {
-      "path": "paper_assets/deviations.md",
-      "asset_class": "doc:deviations",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "produced",
-      "config_hash": null,
-      "inputs": [],
-      "note": "",
-      "timestamp": "2026-08-20T10:02:55-0700",
-      "sha256": "f184e02a3cc270492706110c7aa396ab05e4af4c2023ae8b4d8e6479be226ac0",
-      "bytes": 2154
-    },
-    {
       "path": "paper_assets/scope_and_claims.md",
       "asset_class": "doc:scope_and_claims",
       "notebook": "03_evaluate_and_build_assets",
@@ -481,58 +442,6 @@
       "timestamp": "2026-08-20T10:02:55-0700",
       "sha256": "65901ea1158d88e8b741de4259e8397d5860c9e9b0fced9a765b69ef7c7fb2bc",
       "bytes": 3411
-    },
-    {
-      "path": "paper_assets/tables/dataset_audit.csv",
-      "asset_class": "table:dataset_audit",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "produced",
-      "config_hash": null,
-      "inputs": [],
-      "note": "",
-      "timestamp": "2026-09-13T15:43:01-0700",
-      "sha256": "6d60d07b594a96c0ef0208aa6671b91590bcd36e8ed430b50a0c454c435ff690",
-      "bytes": 442
-    },
-    {
-      "path": "paper_assets/tables/dataset_audit.tex",
-      "asset_class": "table:dataset_audit",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "produced",
-      "config_hash": null,
-      "inputs": [],
-      "note": "",
-      "timestamp": "2026-09-13T15:43:01-0700",
-      "sha256": "784d88eda70d2e2f8d76be2b99179f94063ab0d3e4f521314eb81fc9c1b547bd",
-      "bytes": 991
-    },
-    {
-      "path": "paper_assets/tables/diagnosis_label_histogram.csv",
-      "asset_class": "table:diagnosis_label_histogram",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "produced",
-      "config_hash": null,
-      "inputs": [],
-      "note": "",
-      "timestamp": "2026-09-13T15:45:09-0700",
-      "sha256": "e5f90270283f3924ee28606df08c985acef10e529cc38f0be530c728d188f675",
-      "bytes": 143
-    },
-    {
-      "path": "paper_assets/tables/diagnosis_label_histogram.tex",
-      "asset_class": "table:diagnosis_label_histogram",
-      "notebook": "03_evaluate_and_build_assets",
-      "run_mode": "micro",
-      "status": "produced",
-      "config_hash": null,
-      "inputs": [],
-      "note": "",
-      "timestamp": "2026-09-13T15:45:09-0700",
-      "sha256": "8467237429fb4b8667a9ffa3ecc24be11ac36abcc9eb22d758ec4126fde8bde2",
-      "bytes": 685
     },
     {
       "path": "paper_assets/tables/manipulation_margin.csv",
@@ -587,6 +496,88 @@
       "bytes": 955
     },
     {
+      "path": "paper_assets/tables/dataset_audit.csv",
+      "asset_class": "table:dataset_audit",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco"
+      ],
+      "note": "",
+      "timestamp": "2026-09-13T17:18:44-0700",
+      "sha256": "6d60d07b594a96c0ef0208aa6671b91590bcd36e8ed430b50a0c454c435ff690",
+      "bytes": 442
+    },
+    {
+      "path": "paper_assets/tables/dataset_audit.tex",
+      "asset_class": "table:dataset_audit",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco"
+      ],
+      "note": "",
+      "timestamp": "2026-09-13T17:18:44-0700",
+      "sha256": "784d88eda70d2e2f8d76be2b99179f94063ab0d3e4f521314eb81fc9c1b547bd",
+      "bytes": 991
+    },
+    {
+      "path": "paper_assets/tables/diagnosis_label_histogram.csv",
+      "asset_class": "table:diagnosis_label_histogram",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T17:18:44-0700",
+      "sha256": "e5f90270283f3924ee28606df08c985acef10e529cc38f0be530c728d188f675",
+      "bytes": 143
+    },
+    {
+      "path": "paper_assets/tables/diagnosis_label_histogram.tex",
+      "asset_class": "table:diagnosis_label_histogram",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T17:18:44-0700",
+      "sha256": "8467237429fb4b8667a9ffa3ecc24be11ac36abcc9eb22d758ec4126fde8bde2",
+      "bytes": 685
+    },
+    {
+      "path": "paper_assets/tables/image_overlap.csv",
+      "asset_class": "table:image_overlap",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T17:18:44-0700",
+      "sha256": "55610a10ab98898785f1df6c506548461dec6d870388ea6b60f8bd9cd6bfe52e",
+      "bytes": 464
+    },
+    {
+      "path": "paper_assets/tables/image_overlap.tex",
+      "asset_class": "table:image_overlap",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T17:18:44-0700",
+      "sha256": "3d0f3654a55ea056903beb8b3d8117ae2bef5f8f355453821804777b084ce1e4",
+      "bytes": 1097
+    },
+    {
       "path": "paper_assets/tables/label_scheme.csv",
       "asset_class": "table:label_scheme",
       "notebook": "01_setup_and_data",
@@ -595,7 +586,7 @@
       "config_hash": null,
       "inputs": [],
       "note": "",
-      "timestamp": "2026-09-13T16:22:26-0700",
+      "timestamp": "2026-09-13T17:18:44-0700",
       "sha256": "599a9dec8ab73bb06e7cb8d5b44298d752fac2deb8b077a88dda0e74a8ef67d5",
       "bytes": 384
     },
@@ -608,22 +599,69 @@
       "config_hash": null,
       "inputs": [],
       "note": "",
-      "timestamp": "2026-09-13T16:22:26-0700",
+      "timestamp": "2026-09-13T17:18:44-0700",
       "sha256": "affe48108f99a9ba030b6a2fca1d0b0ac6431d4b8fe3928b7203d164fb05b936",
       "bytes": 991
     },
     {
-      "path": "paper_assets/tables/_not_run_table_image_overlap.txt",
-      "asset_class": "table:image_overlap",
+      "path": "paper_assets/figures/gt_sanity_check.pdf",
+      "asset_class": "figure:gt_sanity",
       "notebook": "01_setup_and_data",
       "run_mode": "micro",
-      "status": "not run",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco/train_quadrant.json",
+        "dentex_converted/coco/train_enumeration.json",
+        "dentex_converted/coco/test_diagnosis.json"
+      ],
+      "note": "Ground-truth annotations overlaid on five randomly sampled images from each DENTEX tier. Labels read quadrant/enumeration/diagnosis.",
+      "timestamp": "2026-09-13T17:19:05-0700",
+      "sha256": "2e8e53478bb9b24689b74887eec1f4b19be1bcf8856d214fc652b81e69e6bb77",
+      "bytes": 527805
+    },
+    {
+      "path": "paper_assets/figures/gt_sanity_check.png",
+      "asset_class": "figure:gt_sanity",
+      "notebook": "01_setup_and_data",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [
+        "dentex_converted/coco/train_quadrant.json",
+        "dentex_converted/coco/train_enumeration.json",
+        "dentex_converted/coco/test_diagnosis.json"
+      ],
+      "note": "Ground-truth annotations overlaid on five randomly sampled images from each DENTEX tier. Labels read quadrant/enumeration/diagnosis.",
+      "timestamp": "2026-09-13T17:19:05-0700",
+      "sha256": "2fea156f9faadabdd93128103d23de48ca7244140c4bbd3d68e985c86e5c2ae9",
+      "bytes": 690015
+    },
+    {
+      "path": "paper_assets/repro_checklist.md",
+      "asset_class": "doc:repro_checklist",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
       "config_hash": null,
       "inputs": [],
-      "note": "no local DENTEX image files available in this environment to hash; code is wired in and will produce this table for real the next time notebook 01 runs on Kaggle",
-      "timestamp": "2026-09-13T16:29:28-0700",
-      "sha256": null,
-      "bytes": null
+      "note": "",
+      "timestamp": "2026-09-13T17:21:49-0700",
+      "sha256": "0cfcc358bd2a40ce266619e4e3e0bc5ac01b4eea0e461e7779e2c212c991c82a",
+      "bytes": 6322
+    },
+    {
+      "path": "paper_assets/deviations.md",
+      "asset_class": "doc:deviations",
+      "notebook": "03_evaluate_and_build_assets",
+      "run_mode": "micro",
+      "status": "produced",
+      "config_hash": null,
+      "inputs": [],
+      "note": "",
+      "timestamp": "2026-09-13T17:21:49-0700",
+      "sha256": "164de826d340febc524e521914140b8e9c68a2c77e8154adc2e67fe8033bf92c",
+      "bytes": 3021
     }
   ],
   "environment": {
@@ -1595,5 +1633,5 @@
       "zstandard==0.25.0"
     ]
   },
-  "updated_at": "2026-09-13T16:29:28-0700"
+  "updated_at": "2026-09-13T17:21:49-0700"
 }
