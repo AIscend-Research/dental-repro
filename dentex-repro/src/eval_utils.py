@@ -102,6 +102,46 @@ def prior_box_coverage(predictions_json: Optional[str],
             "score_threshold": score_threshold, "path": predictions_json}
 
 
+def adaptive_score_threshold(predictions_json: Optional[str], ceiling: float = 0.5,
+                             min_kept_fraction: float = 0.1) -> Dict[str, object]:
+    """
+    The intended threshold (``ceiling``, normally 0.50), or the highest
+    threshold at or below it that still keeps at least ``min_kept_fraction``
+    of the model's own detections -- whichever actually has data behind it.
+
+    A severely undertrained model's scores can cluster well under 0.50 across
+    every single detection, at which point the "not run" checks in
+    error_analysis / fault injection / the qualitative figures fire
+    correctly (empty is a real answer, not a bug), but they leave nothing to
+    look at either. This is not a way to make that go away: it picks the
+    *data's own* highest score band above nothing, states plainly that this
+    is not the model behaving well at 0.50, and it is only ever a fallback --
+    callers still try ``ceiling`` first and only reach for this when that was
+    genuinely empty. The chosen threshold and why must be surfaced in any
+    caption or note that uses it.
+    """
+    empty = {"threshold": ceiling, "used_ceiling": True, "boxes_kept": 0,
+             "n_total": 0, "reason": "no predictions file"}
+    if not predictions_json or not os.path.exists(predictions_json):
+        return empty
+    with open(predictions_json) as handle:
+        records = json.load(handle)
+    scores = sorted((r.get("score", 1.0) for r in records), reverse=True)
+    if not scores:
+        return {**empty, "reason": "predictions file has zero detections"}
+    at_ceiling = sum(1 for s in scores if s >= ceiling)
+    if at_ceiling:
+        return {"threshold": ceiling, "used_ceiling": True,
+                "boxes_kept": at_ceiling, "n_total": len(scores)}
+    target = max(1, int(round(len(scores) * min_kept_fraction)))
+    fallback = scores[target - 1]
+    kept = sum(1 for s in scores if s >= fallback)
+    return {"threshold": round(fallback, 4), "used_ceiling": False,
+            "boxes_kept": kept, "n_total": len(scores),
+            "reason": "no detection reached {:.2f}; every score in this run is "
+                      "lower than that, not a threshold-tuning choice".format(ceiling)}
+
+
 @contextlib.contextmanager
 def noisy_box_inference(predictions_json: Optional[str], jitter: float = 0.0,
                         drop: float = 0.0, score_threshold: float = 0.5):

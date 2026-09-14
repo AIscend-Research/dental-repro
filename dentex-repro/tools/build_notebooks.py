@@ -1139,10 +1139,36 @@ if HAS_GPU and FULL_WEIGHTS:
     coverage = eval_utils.prior_box_coverage(prior_test)
     print("prior boxes usable: {boxes_kept}/{boxes_total} over {images_with_boxes} "
           "images (score >= {score_threshold})".format(**coverage))
+    fault_injection_threshold = coverage["score_threshold"]
+    if not coverage["boxes_kept"]:
+        # 0.50 is the intended threshold, not a fact about this checkpoint. Try
+        # the highest threshold the model's own scores actually support before
+        # concluding the experiment is a no-op -- and say so loudly either way.
+        adaptive = eval_utils.adaptive_score_threshold(prior_test)
+        coverage = eval_utils.prior_box_coverage(prior_test, adaptive["threshold"])
+        fault_injection_threshold = adaptive["threshold"]
+        print("0.50 was empty ({}); retried at the adaptive threshold: "
+              "{boxes_kept}/{boxes_total} boxes over {images_with_boxes} images "
+              "(score >= {score_threshold})".format(adaptive["reason"], **coverage))
+        if coverage["boxes_kept"]:
+            setup_env.log_deviation(
+                "fault-injection prior-tier threshold lowered from 0.50 to {:.4f}"
+                .format(fault_injection_threshold),
+                "no prior-tier box scored above 0.50 at this checkpoint's training "
+                "budget ({}), so the experiment as specified would inject nothing "
+                "for every condition; lowered to the highest threshold this "
+                "checkpoint's own score distribution supports, chosen by "
+                "eval_utils.adaptive_score_threshold, not hand-picked".format(
+                    adaptive["reason"]),
+                "03_evaluate_and_build_assets",
+                impact="fault-injection AP numbers below are conditioned on this "
+                       "lower threshold, not the paper's implied 0.50; the perturbed "
+                       "boxes are lower-confidence than intended")
 if HAS_GPU and FULL_WEIGHTS and coverage["boxes_kept"]:
     for condition in degradations.fault_grid(run):
         with eval_utils.noisy_box_inference(prior_test, jitter=condition["jitter"],
-                                            drop=condition["drop"]) as injection:
+                                            drop=condition["drop"],
+                                            score_threshold=fault_injection_threshold) as injection:
             payload = eval_utils.evaluate_multi_seed(
                 FULL_WEIGHTS, CFG["diagnosis"], run.robustness_seeds,
                 split="diagnosis_test", tier=2, limit=run.eval_limit)
@@ -1173,10 +1199,29 @@ if HAS_GPU and FULL_WEIGHTS:
     if not os.path.exists(predictions_path):
         eval_utils.dump_predictions(FULL_WEIGHTS, CFG["diagnosis"], "diagnosis_test", 2,
                                     predictions_path, seed=0, limit=run.eval_limit)
+    # 0.50 is the intended threshold, not a fact about this checkpoint: at this
+    # training budget every detection can score under it, which makes the
+    # error rate undefined rather than zero. Try 0.50 first regardless.
+    error_threshold_info = eval_utils.adaptive_score_threshold(predictions_path)
+    if not error_threshold_info["used_ceiling"]:
+        setup_env.log_deviation(
+            "error-analysis / qualitative-figure score threshold lowered from "
+            "0.50 to {:.4f}".format(error_threshold_info["threshold"]),
+            "{}; lowered to the highest threshold this checkpoint's own score "
+            "distribution supports, chosen by eval_utils.adaptive_score_threshold, "
+            "not hand-picked".format(error_threshold_info["reason"]),
+            "03_evaluate_and_build_assets",
+            impact="the error-cluster rate and any drawn predictions below this "
+                   "point are conditioned on {:.4f}, not the paper's implied 0.50 "
+                   "-- these are this checkpoint's highest-confidence detections, "
+                   "not necessarily confident ones".format(error_threshold_info["threshold"]))
+    print("score threshold for error analysis / qualitative figures: {}"
+          .format(error_threshold_info))
     # Localisation and classification stay separate: a box that overlaps a real
     # tooth but carries the wrong diagnosis is a matched detection with a class
     # disagreement, not a miss plus a false positive.
-    analysis = eval_utils.error_analysis(predictions_path, paths["test_diagnosis"], tier=2)
+    analysis = eval_utils.error_analysis(predictions_path, paths["test_diagnosis"], tier=2,
+                                         score_threshold=error_threshold_info["threshold"])
     eval_utils.save_result(manifest.result_name("errors", model="Ours_full"), analysis)
     print(json.dumps(analysis["totals"], indent=2))
     print("\\nerror rate by tier (wrong label among correctly localised boxes):")
@@ -1201,7 +1246,7 @@ if HAS_GPU and FULL_WEIGHTS:
         predictions = json.load(handle)
     pred_by_image = {}
     for record in predictions:
-        if record.get("score", 0) >= 0.5:
+        if record.get("score", 0) >= error_threshold_info["threshold"]:
             pred_by_image.setdefault(record["image_id"], []).append(record)
     names = {level: {c["id"]: str(c["name"])
                      for c in truth["categories_{}".format(level + 1)]} for level in range(3)}
@@ -1230,12 +1275,21 @@ if HAS_GPU and FULL_WEIGHTS:
         gallery_ids[bucket] = [r["image_id"] for r in rows]
         for row in rows:
             panels.append(panel(row["image_id"], "{}\\n{}".format(bucket, row["file_name"])))
+    _threshold_used = error_threshold_info["threshold"]
+    _threshold_caption_note = (
+        "" if error_threshold_info["used_ceiling"] else
+        " Score threshold: {:.4f} (lowered from 0.50 -- {}).".format(
+            _threshold_used, error_threshold_info["reason"]))
     if not drawable_predictions:
         figures.record_not_run(
             "figure:qualitative", "03_evaluate_and_build_assets", run.mode,
-            "no detection scored above 0.5, so both qualitative figures would "
-            "show ground-truth boxes only while captioned as prediction-vs-truth "
-            "comparisons. {} ground-truth boxes, 0 predictions.".format(
+            "no detection scored above {:.4f} ({}), so both qualitative figures "
+            "would show ground-truth boxes only while captioned as "
+            "prediction-vs-truth comparisons. {} ground-truth boxes, 0 "
+            "predictions.".format(
+                _threshold_used,
+                "the intended threshold" if error_threshold_info["used_ceiling"]
+                else "already the adaptive fallback -- every detection scores lower",
                 sum(len(v) for v in gt_by_image.values())))
         panels = []
     if panels:
@@ -1244,7 +1298,8 @@ if HAS_GPU and FULL_WEIGHTS:
                                             "orange dashed: prediction")
         figures.save_figure(figure, "failure_gallery",
                             "Representative failures of the full model on the DENTEX "
-                            "test split, one row per failure mode.",
+                            "test split, one row per failure mode.{}".format(
+                                _threshold_caption_note),
                             "03_evaluate_and_build_assets", run.mode, "figure:qualitative",
                             inputs=[predictions_path], note=json.dumps(gallery_ids))
 
@@ -1262,7 +1317,7 @@ if HAS_GPU and FULL_WEIGHTS:
         figures.save_figure(figure, "qualitative_overlays",
                             "Full-model predictions (orange, dashed) against ground "
                             "truth (blue, solid) on six clean and six stress-subset "
-                            "test images.",
+                            "test images.{}".format(_threshold_caption_note),
                             "03_evaluate_and_build_assets", run.mode,
                             "figure:qualitative",
                             inputs=[predictions_path], note=json.dumps(curated))
@@ -1660,9 +1715,14 @@ if error_results:
         figures.save_figure(figure, "error_clusters",
                             "Per-tier classification error rate among correctly "
                             "localised detections (IoU >= 0.5) for the full model on "
-                            "the test split. Denominator by tier: {}.".format(
+                            "the test split. Denominator by tier: {}. Detection score "
+                            "threshold: {:.4f}{}.".format(
                                 ", ".join("{} {}".format(k, v)
-                                          for k, v in sorted(localised.items()))),
+                                          for k, v in sorted(localised.items())),
+                                analysis["score_threshold"],
+                                "" if analysis["score_threshold"] == 0.5
+                                else " (lowered from 0.50 -- no detection scored that "
+                                     "high at this checkpoint's training budget)"),
                             NB, run.mode, "figure:error_clusters")
 else:
     figures.record_not_run("figure:error_clusters", NB, run.mode, "no error analysis")
@@ -1699,10 +1759,18 @@ elif fault_results:
     figure = figures.sweep_figure(series, "perturbation magnitude",
                                   "diagnosis AP [0.5:0.95]",
                                   "Sensitivity to an imperfect prior tier")
+    _fault_thresholds = {round((p.get("injection") or {}).get("score_threshold"), 4)
+                         for p in fault_results.values()
+                         if (p.get("injection") or {}).get("score_threshold") is not None}
+    _threshold_note = (
+        " Prior-tier score threshold: {:.4f} (lowered from the intended 0.50 -- "
+        "no prior-tier box scored that high at this checkpoint's training budget)."
+        .format(next(iter(_fault_thresholds)))
+        if _fault_thresholds and next(iter(_fault_thresholds)) != 0.5 else "")
     figures.save_figure(figure, "fault_injection",
                         "Diagnosis-tier AP as the enumeration model's detections are "
                         "jittered (normalized-coordinate sigma) or randomly dropped "
-                        "before being used as noisy boxes.",
+                        "before being used as noisy boxes.{}".format(_threshold_note),
                         NB, run.mode, "figure:fault_injection")
 else:
     figures.record_not_run("figure:fault_injection", NB, run.mode, "fault injection not run")
