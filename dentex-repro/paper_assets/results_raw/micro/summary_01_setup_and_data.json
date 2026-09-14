@@ -39,10 +39,10 @@
       "tqdm==4.70.1",
       "typing_extensions==4.16.0"
     ],
-    "note": "This notebook-01 equivalent was executed locally (not on Kaggle) by Claude Code, CPU-only, against a freshly downloaded copy of the dataset -- see hf revision below. Every other artifact in this study still ran on Kaggle T4 x2; only this data-audit step ran elsewhere."
+    "note": "This notebook-01 equivalent was executed locally (not on Kaggle), CPU-only, against a freshly downloaded copy of the dataset -- see hf revision below. Every other artifact in this study still ran on Kaggle T4 x2; only this data-audit step ran elsewhere."
   },
   "download": {
-    "raw_dir": "/private/tmp/claude-501/-Users-christopherhuang-Documents-GitHub-HierarchicalDet/8bf9e1e1-8fee-47bf-9a90-3a41af416749/scratchpad/dentex_raw",
+    "raw_dir": "(local, deleted after conversion)",
     "steps": [
       "training_data.zip"
     ],
